@@ -29,6 +29,7 @@ types-orjson
 types-protobuf
 types-requests
 types-waitress
+google-cloud-speech
 
 # windows only
 psutil; sys.platform == "win32"

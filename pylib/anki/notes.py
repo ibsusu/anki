@@ -166,6 +166,12 @@ class Note(DeprecatedNamesMixin):
     def has_tag(self, tag: str) -> bool:
         return self.col.tags.inList(tag, self.tags)
 
+    def tag_prefix(self, tagPrefix: str) -> bool:
+        for tag in self.col.tags:
+            if tag.startswith(tagPrefix):
+                return tag
+        return "speech-to-text-lang-en-US"
+
     def remove_tag(self, tag: str) -> None:
         rem = []
         for tag_ in self.tags:

@@ -22,6 +22,7 @@ from anki.scheduler.v3 import CardAnswer, NextStates, QueuedCards
 from anki.scheduler.v3 import Scheduler as V3Scheduler
 from anki.tags import MARKED_TAG
 from anki.utils import stripHTML
+from anki.speech_google import speech_to_text
 from aqt import AnkiQt, gui_hooks
 from aqt.browser.card_info import CardInfoDialog
 from aqt.deckoptions import confirm_deck_then_display_options
@@ -387,6 +388,19 @@ class Reviewer:
         self.mw.web.setFocus()
         # user hook
         gui_hooks.reviewer_did_show_answer(c)
+
+
+    def onShowTranscript(self, transcript: Dict[AnyStr, Any]) -> None:
+        text = transcript["text"]
+        confidence = transcript["confidence"]
+        confidenceSymbol = u"👍"
+        if confidence < 0.85 and confidence > 0.60:
+            confidenceSymbol = u"👌"
+        elif confidence <= 0.60:
+            confidenceSymbol = u"👎"
+        html = f'<div>🎤: {text}, {confidenceSymbol}</div>'
+        self.web.eval(f"setFormat('inserthtml', '{html}'');")
+
 
     # Answering a card
     ############################################################
@@ -1045,9 +1059,17 @@ time = %(time)d;
     def onRecordVoice(self) -> None:
         def after_record(path: str) -> None:
             self._recordedAudio = path
+            self.onCheckVoice()
             self.onReplayRecorded()
 
         record_audio(self.mw, self.mw, False, after_record)
+
+    def onCheckVoice(self) -> None:
+        if not self._recordedAudio:
+            return
+        print("self._recordedAudioPath: ", self._recordedAudio)
+        sttLang = self.card.note().tag_prefix("speech-to-text-lang-").replace("speech-to-text-lang-")
+        speech_to_text(self._recordedAudio, sttLang, self.onShowTranscript)
 
     def onReplayRecorded(self) -> None:
         if not self._recordedAudio:
