@@ -167,7 +167,7 @@ class Note(DeprecatedNamesMixin):
         return self.col.tags.inList(tag, self.tags)
 
     def tag_prefix(self, tagPrefix: str) -> bool:
-        for tag in self.col.tags:
+        for tag in self.tags:
             if tag.startswith(tagPrefix):
                 return tag
         return "speech-to-text-lang-en-US"

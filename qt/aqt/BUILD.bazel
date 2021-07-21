@@ -51,6 +51,7 @@ aqt_deps = [
     requirement("waitress"),
     requirement("send2trash"),
     requirement("jsonschema"),
+    requirement("google-cloud-speech"),
     "@pyqt5//:pkg",
 ] + select({
     "@bazel_tools//src/conditions:host_windows": [

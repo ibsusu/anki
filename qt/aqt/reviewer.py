@@ -391,15 +391,51 @@ class Reviewer:
 
 
     def onShowTranscript(self, transcript: Dict[AnyStr, Any]) -> None:
-        text = transcript["text"]
+        def checkAnswer(answer, speech):
+            answerMarks = ''
+            right = 0
+            length = len(answer)
+            speechLength = len(speech)
+            shortest = length if length < speechLength else speechLength
+            i = 0
+            while i < shortest:
+                if answer[i] != speech[i]:
+                    answerMarks += f'<span style="background-color:red;">{speech[i]}</span>'
+                else:
+                    answerMarks += f'<span style="background-color:green;">{speech[i]}</span>'
+                    right += 1
+                i += 1
+
+            while i < length:
+                answerMarks += f'<span style="background-color:red;">_</span>'
+                i += 1
+            while i < speechLength:
+                answerMarks += f'<span style="background-color:red;">{speech[i]}</span>'
+                i += 1
+            return answerMarks, (right / i) * 100
+
+
+
+
+        speech = transcript["text"]
+        if "Chinese" in self.card.note():
+            answer = self.card.note()["Chinese"]
+        elif "Korean" in self.card.note():
+            answer = self.card.note()['Korean']
+        else:
+            answer = self.card.note()['Russian']
+        answer = re.sub(r'[–—‘’“”…、。〈〉《》「」『』【】〔〕！（），．：；？,.?]', '', answer)
+        text = re.sub(r'[–—‘’“”…、。〈〉《》「」『』【】〔〕！（），．：；？,.?]', '', answer)
+        speechHTML, grade = checkAnswer(answer, speech) 
         confidence = transcript["confidence"]
-        confidenceSymbol = u"👍"
-        if confidence < 0.85 and confidence > 0.60:
-            confidenceSymbol = u"👌"
-        elif confidence <= 0.60:
-            confidenceSymbol = u"👎"
-        html = f'<div>🎤: {text}, {confidenceSymbol}</div>'
-        self.web.eval(f"setFormat('inserthtml', '{html}'');")
+        # confidenceSymbol = u"👍"
+        # if confidence < 0.85 and confidence > 0.60:
+        #     confidenceSymbol = u"👌"
+        # elif confidence <= 0.60:
+        #     confidenceSymbol = u"👎"
+        html = f'<div id="speechResult">speech: {speechHTML}</br>grade: {grade:.2f}%, confidence: {confidence}</div>'
+        self.web.eval(f"(() => {{ let el = document.getElementById('speechResult');  if(el){{el.remove();}} }})()")
+        self.web.eval(f"document.body.insertAdjacentHTML('beforeend', '{html}');")
 
 
     # Answering a card
@@ -1067,8 +1103,16 @@ time = %(time)d;
     def onCheckVoice(self) -> None:
         if not self._recordedAudio:
             return
-        print("self._recordedAudioPath: ", self._recordedAudio)
-        sttLang = self.card.note().tag_prefix("speech-to-text-lang-").replace("speech-to-text-lang-")
+        # print("self._recordedAudioPath: ", self._recordedAudio)
+        if "Chinese" in self.card.note():
+            sttLang = "cmn-Hans-CN"
+        elif "Korean" in self.card.note():
+            sttLang = "ko-KR"
+        else:
+            sttLang = "ru-RU"
+
+        # sttLang = self.card.note().tag_prefix("speech-to-text-lang-").replace("speech-to-text-lang-", "")
+        # print(self.card.note().keys())
         speech_to_text(self._recordedAudio, sttLang, self.onShowTranscript)
 
     def onReplayRecorded(self) -> None:
